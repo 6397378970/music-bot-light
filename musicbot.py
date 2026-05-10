@@ -5,7 +5,7 @@ from pyrogram.types import (
 )
 
 from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream.audio_piped import AudioPiped
+from pytgcalls.types.input_stream import AudioPiped
 
 from yt_dlp import YoutubeDL
 

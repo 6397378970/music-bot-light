@@ -222,10 +222,12 @@ async def play(_, message):
         duration = info["entries"][0]["duration"]
         thumb = info["entries"][0]["thumbnail"]
 
-    await call_py.join_group_call(
-        message.chat.id,
-        AudioPiped(url)
+   await call_py.join_group_call(
+    message.chat.id,
+    AudioPiped(
+        url,
     )
+)
 
     caption = f"""
 🎵 **Started Streaming**

@@ -2,7 +2,7 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from pytgcalls import PyTgCalls
-from pytgcalls.types import AudioPiped
+from pytgcalls.types.input_stream import InputAudioStream
 
 from yt_dlp import YoutubeDL
 
@@ -237,7 +237,7 @@ async def play(_, message):
 
         await call_py.join_group_call(
             message.chat.id,
-            AudioPiped(url)
+            InputAudioStream(url)
         )
 
     except Exception as e:

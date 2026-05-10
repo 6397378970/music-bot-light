@@ -12,7 +12,7 @@ from pyrogram.errors import RPCError
 
 # ✅ Yeh daal do
 from pytgcalls import PyTgCalls
-from pytgcalls.types import AudioPiped
+from pytgcalls.types import MediaStream
 from yt_dlp import YoutubeDL
 
 # ==========================================
@@ -120,12 +120,7 @@ async def play_song(chat_id: int, song_url: str, title: str):
     try:
         await call.join_group_call(
             chat_id,
-            Stream(
-                AudioPiped(
-                    song_url,
-                    AudioQuality.HIGH
-                )
-            )
+            MediaStream(song_url)
         )
         current_playing[chat_id] = {
             'title': title,
@@ -136,6 +131,7 @@ async def play_song(chat_id: int, song_url: str, title: str):
     except Exception as e:
         print(f"Error playing: {e}")
         return False
+
 
 async def add_to_queue(chat_id: int, song_info: dict):
     if chat_id not in queues:

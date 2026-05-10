@@ -337,48 +337,4 @@ async def main():
 
 asyncio.run(main())
 
----
-
-# Railway Variables
-
-```env
-API_ID=your_api_id
-API_HASH=your_api_hash
-BOT_TOKEN=your_bot_token
-STRING_SESSION=your_string_session
-```
-
----
-
-# IMPORTANT
-
-Replace:
-
-```python
-BOT_USERNAME = "YOUR_BOT_USERNAME"
-```
-
-Example:
-
-```python
-BOT_USERNAME = "LightMusicBot"
-```
-
-without @
-
----
-
-# FINAL STEPS
-
-1. Upload all files to GitHub
-2. Deploy repo on Railway
-3. Add Railway Variables
-4. Add bot in group
-5. Add assistant account in group
-6. Make assistant admin
-7. Start voice chat
-8. Use:
-
-```text
-/play song name
 ```

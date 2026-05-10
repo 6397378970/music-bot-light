@@ -7,9 +7,12 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQ
 from pyrogram.enums import ChatType, ParseMode
 from pyrogram.errors import RPCError
 
-from py_tgcalls import PyTgCalls, Stream
-from py_tgcalls.types import AudioPiped, AudioQuality
+# ❌ Yeh hata do
+# from py_tgcalls import PyTgcalls, Stream
 
+# ✅ Yeh daal do
+from pytgcalls import PyTgCalls
+from pytgcalls.types import AudioPiped
 from yt_dlp import YoutubeDL
 
 # ==========================================

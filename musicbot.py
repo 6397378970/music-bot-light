@@ -1,8 +1,5 @@
 from pyrogram import Client, filters
-from pyrogram.types import (
-    InlineKeyboardMarkup,
-    InlineKeyboardButton
-)
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from pytgcalls import PyTgCalls
 from pytgcalls.types.input_stream import AudioPiped
@@ -13,7 +10,7 @@ import asyncio
 import os
 
 # ==========================================
-# CONFIG
+# VARIABLES
 # ==========================================
 
 API_ID = int(os.getenv("30393394"))
@@ -22,8 +19,9 @@ BOT_TOKEN = os.getenv("8738226196:AAHcD8BH12Ev3zABlDFBbiePeW5aZaGtjX4")
 STRING_SESSION = os.getenv("BQHPxDIAqyC-rURYuKkGxyKYICv1VjZyCJLvTIS2kOTKZbNrI5ZA__oZ2YZINvtk6Ut286tZFvHIlEXoGkNQH9L0fW7dKGWK0c5DO5eOCtPRZUzCH0F3dK_60daPI4erELF5T71ykXgSQY1MGssSwjdTrWMdc0m5gp9B7F_rSGtun2g-SUNgA03BkILScVkAvKj8afLPZPFwCnbEKbImsYkpjDS4JZGApS7jM9BYnmgqvA8QtG93UMwbQr7iTLUonavv9qWOO7xVtu3wVfBnLw4zn8563ZZ5afQN-8M7g5cwF3tWrkMa5547JLllvy8wEr-cn0pI-9JBNyz_hoVlI-p9p71GmwAAAAFMSMrYAA")
 
 BOT_USERNAME = "https://t.me/lightmusicibot"
-
 OWNER = "@light_speedy"
+
+START_IMAGE = "https://files.catbox.moe/l7m3k9.png"
 
 # ==========================================
 # CLIENTS
@@ -51,7 +49,9 @@ call_py = PyTgCalls(assistant)
 
 ydl_opts = {
     "format": "bestaudio",
-    "quiet": True
+    "quiet": True,
+    "geo-bypass": True,
+    "nocheckcertificate": True
 }
 
 # ==========================================
@@ -64,16 +64,19 @@ async def start(_, message):
     user = message.from_user
 
     text = f"""
-✨ Hello [{user.first_name}](tg://user?id={user.id})
+✨ **Hey [{user.first_name}](tg://user?id={user.id})** 🎵
 
-🎵 This Is **LIGHT MUSIC BOT**
+╭━━━━━━━━━━━━━━━━━╮
+      🎧 LIGHT MUSIC BOT
+╰━━━━━━━━━━━━━━━━━╯
 
-⚡ Fast • Powerful • Professional
-
-🎧 Stream Music In Telegram Voice Chat
+⚡ Fastest VC Music Player
+🎶 Smooth Streaming
+🔥 HD Audio Quality
+💎 Professional Music System
 
 ━━━━━━━━━━━━━━━
-🔥 Powered By : {OWNER}
+🌟 Powered By : {OWNER}
 ━━━━━━━━━━━━━━━
 """
 
@@ -81,7 +84,7 @@ async def start(_, message):
         [
             [
                 InlineKeyboardButton(
-                    "➕ Add Me",
+                    "➕ Add Me To Group",
                     url=f"https://t.me/{BOT_USERNAME}?startgroup=true"
                 )
             ],
@@ -99,7 +102,7 @@ async def start(_, message):
     )
 
     await message.reply_photo(
-        photo="https://files.catbox.moe/l7m3k9.png",
+        photo=START_IMAGE,
         caption=text,
         reply_markup=buttons
     )
@@ -115,15 +118,14 @@ async def help_menu(_, query):
 📚 **LIGHT MUSIC BOT COMMANDS**
 
 ▶️ /play song name
-▶️ /vplay video name
 ▶️ /pause
 ▶️ /resume
 ▶️ /skip
 ▶️ /stop
-▶️ /queue
+▶️ /ping
 
 ━━━━━━━━━━━━━━━
-⚡ Powered By : {OWNER}
+🌟 Powered By : {OWNER}
 ━━━━━━━━━━━━━━━
 """
 
@@ -153,16 +155,19 @@ async def back(_, query):
     user = query.from_user
 
     text = f"""
-✨ Hello [{user.first_name}](tg://user?id={user.id})
+✨ **Hey [{user.first_name}](tg://user?id={user.id})** 🎵
 
-🎵 This Is **LIGHT MUSIC BOT**
+╭━━━━━━━━━━━━━━━━━╮
+      🎧 LIGHT MUSIC BOT
+╰━━━━━━━━━━━━━━━━━╯
 
-⚡ Fast • Powerful • Professional
-
-🎧 Stream Music In Telegram Voice Chat
+⚡ Fastest VC Music Player
+🎶 Smooth Streaming
+🔥 HD Audio Quality
+💎 Professional Music System
 
 ━━━━━━━━━━━━━━━
-🔥 Powered By : {OWNER}
+🌟 Powered By : {OWNER}
 ━━━━━━━━━━━━━━━
 """
 
@@ -170,7 +175,7 @@ async def back(_, query):
         [
             [
                 InlineKeyboardButton(
-                    "➕ Add Me",
+                    "➕ Add Me To Group",
                     url=f"https://t.me/{BOT_USERNAME}?startgroup=true"
                 )
             ],
@@ -193,6 +198,14 @@ async def back(_, query):
     )
 
 # ==========================================
+# PING
+# ==========================================
+
+@app.on_message(filters.command("ping"))
+async def ping(_, message):
+    await message.reply_text("🏓 Pong ! Bot Working Fine")
+
+# ==========================================
 # PLAY
 # ==========================================
 
@@ -200,15 +213,11 @@ async def back(_, query):
 async def play(_, message):
 
     if len(message.command) < 2:
-        return await message.reply_text(
-            "❌ Usage : /play song name"
-        )
+        return await message.reply_text("❌ Usage : /play song name")
 
     query = " ".join(message.command[1:])
 
-    searching = await message.reply_text(
-        "🔍 Searching Song..."
-    )
+    msg = await message.reply_text("🔍 Searching Song...")
 
     with YoutubeDL(ydl_opts) as ydl:
 
@@ -217,17 +226,22 @@ async def play(_, message):
             download=False
         )
 
-        url = info["entries"][0]["url"]
-        title = info["entries"][0]["title"]
-        duration = info["entries"][0]["duration"]
-        thumb = info["entries"][0]["thumbnail"]
+        song = info["entries"][0]
 
-   await call_py.join_group_call(
-    message.chat.id,
-    AudioPiped(
-        url,
-    )
-)
+        url = song["url"]
+        title = song["title"]
+        thumb = song["thumbnail"]
+        duration = song.get("duration", 0)
+
+    try:
+
+        await call_py.join_group_call(
+            message.chat.id,
+            AudioPiped(url)
+        )
+
+    except Exception as e:
+        return await msg.edit(f"❌ Error:\n{e}")
 
     caption = f"""
 🎵 **Started Streaming**
@@ -241,29 +255,16 @@ async def play(_, message):
 👤 **Requested By:** {message.from_user.mention}
 
 ━━━━━━━━━━━━━━━
-⚡ Powered By : {OWNER}
+🌟 Powered By : {OWNER}
 ━━━━━━━━━━━━━━━
 """
 
     buttons = InlineKeyboardMarkup(
         [
             [
-                InlineKeyboardButton(
-                    "⏸",
-                    callback_data="pause"
-                ),
-                InlineKeyboardButton(
-                    "▶️",
-                    callback_data="resume"
-                ),
-                InlineKeyboardButton(
-                    "⏭",
-                    callback_data="skip"
-                ),
-                InlineKeyboardButton(
-                    "⏹",
-                    callback_data="stop"
-                )
+                InlineKeyboardButton("⏸", callback_data="pause"),
+                InlineKeyboardButton("▶️", callback_data="resume"),
+                InlineKeyboardButton("⏹", callback_data="stop")
             ]
         ]
     )
@@ -274,105 +275,60 @@ async def play(_, message):
         reply_markup=buttons
     )
 
-    await searching.delete()
+    await msg.delete()
 
 # ==========================================
-# BUTTON CONTROLS
+# BUTTONS
 # ==========================================
 
 @app.on_callback_query(filters.regex("pause"))
 async def pause(_, query):
 
     await call_py.pause_stream(query.message.chat.id)
-
-    await query.answer(
-        "Music Paused"
-    )
+    await query.answer("Music Paused")
 
 @app.on_callback_query(filters.regex("resume"))
 async def resume(_, query):
 
     await call_py.resume_stream(query.message.chat.id)
-
-    await query.answer(
-        "Music Resumed"
-    )
+    await query.answer("Music Resumed")
 
 @app.on_callback_query(filters.regex("stop"))
 async def stop(_, query):
 
-    await call_py.leave_group_call(
-        query.message.chat.id
-    )
-
-    await query.answer(
-        "Music Stopped"
-    )
-
-@app.on_callback_query(filters.regex("skip"))
-async def skip(_, query):
-
-    await query.answer(
-        "Skipped"
-    )
+    await call_py.leave_group_call(query.message.chat.id)
+    await query.answer("Music Stopped")
 
 # ==========================================
-# COMMAND CONTROLS
+# COMMANDS
 # ==========================================
 
 @app.on_message(filters.command("pause"))
 async def pause_cmd(_, message):
 
     await call_py.pause_stream(message.chat.id)
-
-    await message.reply_text(
-        "⏸ Music Paused"
-    )
+    await message.reply_text("⏸ Music Paused")
 
 @app.on_message(filters.command("resume"))
 async def resume_cmd(_, message):
 
     await call_py.resume_stream(message.chat.id)
-
-    await message.reply_text(
-        "▶️ Music Resumed"
-    )
+    await message.reply_text("▶️ Music Resumed")
 
 @app.on_message(filters.command("stop"))
 async def stop_cmd(_, message):
 
-    await call_py.leave_group_call(
-        message.chat.id
-    )
-
-    await message.reply_text(
-        "⏹ Music Stopped"
-    )
-
-@app.on_message(filters.command("skip"))
-async def skip_cmd(_, message):
-
-    await message.reply_text(
-        "⏭ Skipped"
-    )
-
-@app.on_message(filters.command("queue"))
-async def queue(_, message):
-
-    await message.reply_text(
-        "📜 Queue Is Empty"
-    )
+    await call_py.leave_group_call(message.chat.id)
+    await message.reply_text("⏹ Music Stopped")
 
 # ==========================================
-# MAIN
+# START BOT
 # ==========================================
 
 async def main():
 
     await app.start()
-
     await assistant.start()
-
     await call_py.start()
 
     print("LIGHT MUSIC BOT STARTED")
@@ -380,3 +336,50 @@ async def main():
     await asyncio.Event().wait()
 
 asyncio.run(main())
+```
+
+---
+
+# Railway Variables
+
+```env
+API_ID=your_api_id
+API_HASH=your_api_hash
+BOT_TOKEN=your_bot_token
+STRING_SESSION=your_string_session
+```
+
+---
+
+# IMPORTANT
+
+Replace:
+
+```python
+BOT_USERNAME = "YOUR_BOT_USERNAME"
+```
+
+Example:
+
+```python
+BOT_USERNAME = "LightMusicBot"
+```
+
+without @
+
+---
+
+# FINAL STEPS
+
+1. Upload all files to GitHub
+2. Deploy repo on Railway
+3. Add Railway Variables
+4. Add bot in group
+5. Add assistant account in group
+6. Make assistant admin
+7. Start voice chat
+8. Use:
+
+```text
+/play song name
+```

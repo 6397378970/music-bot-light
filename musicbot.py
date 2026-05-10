@@ -2,7 +2,7 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream import InputAudioStream
+from pytgcalls.types import InputAudioStream  # ✅ Yahan change kiya
 
 from yt_dlp import YoutubeDL
 
@@ -10,15 +10,15 @@ import asyncio
 import os
 
 # ==========================================
-# VARIABLES
+# VARIABLES (Environment se lo, hardcode mat karo)
 # ==========================================
 
-API_ID = int(os.getenv("30393394"))
-API_HASH = os.getenv("e6c11cf9308422a702de45fe4a95b543")
-BOT_TOKEN = os.getenv("8738226196:AAHcD8BH12Ev3zABlDFBbiePeW5aZaGtjX4")
-STRING_SESSION = os.getenv("BQHPxDIAqyC-rURYuKkGxyKYICv1VjZyCJLvTIS2kOTKZbNrI5ZA__oZ2YZINvtk6Ut286tZFvHIlEXoGkNQH9L0fW7dKGWK0c5DO5eOCtPRZUzCH0F3dK_60daPI4erELF5T71ykXgSQY1MGssSwjdTrWMdc0m5gp9B7F_rSGtun2g-SUNgA03BkILScVkAvKj8afLPZPFwCnbEKbImsYkpjDS4JZGApS7jM9BYnmgqvA8QtG93UMwbQr7iTLUonavv9qWOO7xVtu3wVfBnLw4zn8563ZZ5afQN-8M7g5cwF3tWrkMa5547JLllvy8wEr-cn0pI-9JBNyz_hoVlI-p9p71GmwAAAAFMSMrYAA")
+API_ID = int(os.getenv("API_ID", 30393394))  # Default values daal sakte ho
+API_HASH = os.getenv("API_HASH", "e6c11cf9308422a702de45fe4a95b543")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8738226196:AAHcD8BH12Ev3zABlDFBbiePeW5aZaGtjX4")
+STRING_SESSION = os.getenv("STRING_SESSION")
 
-BOT_USERNAME = "https://t.me/lightmusicibot"
+BOT_USERNAME = "lightmusicibot"  # ✅ Sirf username, @ ke bina
 OWNER = "@light_speedy"
 
 START_IMAGE = "https://files.catbox.moe/l7m3k9.png"
@@ -55,14 +55,13 @@ ydl_opts = {
 }
 
 # ==========================================
-# START
+# START COMMAND
 # ==========================================
 
 @app.on_message(filters.command("start"))
 async def start(_, message):
-
     user = message.from_user
-
+    
     text = f"""
 ✨ **Hey [{user.first_name}](tg://user?id={user.id})** 🎵
 
@@ -79,28 +78,20 @@ async def start(_, message):
 🌟 Powered By : {OWNER}
 ━━━━━━━━━━━━━━━
 """
-
-    buttons = InlineKeyboardMarkup(
+    
+    buttons = InlineKeyboardMarkup([
         [
-            [
-                InlineKeyboardButton(
-                    "➕ Add Me To Group",
-                    url=f"https://t.me/{BOT_USERNAME}?startgroup=true"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "👑 Owner",
-                    url="https://t.me/light_speedy"
-                ),
-                InlineKeyboardButton(
-                    "📚 Help",
-                    callback_data="help"
-                )
-            ]
+            InlineKeyboardButton(
+                "➕ Add Me To Group",
+                url=f"https://t.me/{BOT_USERNAME}?startgroup=true"
+            )
+        ],
+        [
+            InlineKeyboardButton("👑 Owner", url="https://t.me/light_speedy"),
+            InlineKeyboardButton("📚 Help", callback_data="help")
         ]
-    )
-
+    ])
+    
     await message.reply_photo(
         photo=START_IMAGE,
         caption=text,
@@ -108,12 +99,11 @@ async def start(_, message):
     )
 
 # ==========================================
-# HELP
+# HELP CALLBACK
 # ==========================================
 
 @app.on_callback_query(filters.regex("help"))
 async def help_menu(_, query):
-
     text = f"""
 📚 **LIGHT MUSIC BOT COMMANDS**
 
@@ -128,32 +118,24 @@ async def help_menu(_, query):
 🌟 Powered By : {OWNER}
 ━━━━━━━━━━━━━━━
 """
-
-    buttons = InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton(
-                    "🔙 Back",
-                    callback_data="back"
-                )
-            ]
-        ]
-    )
-
+    
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔙 Back", callback_data="back")]
+    ])
+    
     await query.message.edit_caption(
         caption=text,
         reply_markup=buttons
     )
 
 # ==========================================
-# BACK
+# BACK CALLBACK
 # ==========================================
 
 @app.on_callback_query(filters.regex("back"))
 async def back(_, query):
-
     user = query.from_user
-
+    
     text = f"""
 ✨ **Hey [{user.first_name}](tg://user?id={user.id})** 🎵
 
@@ -170,79 +152,62 @@ async def back(_, query):
 🌟 Powered By : {OWNER}
 ━━━━━━━━━━━━━━━
 """
-
-    buttons = InlineKeyboardMarkup(
+    
+    buttons = InlineKeyboardMarkup([
         [
-            [
-                InlineKeyboardButton(
-                    "➕ Add Me To Group",
-                    url=f"https://t.me/{BOT_USERNAME}?startgroup=true"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "👑 Owner",
-                    url="https://t.me/light_speedy"
-                ),
-                InlineKeyboardButton(
-                    "📚 Help",
-                    callback_data="help"
-                )
-            ]
+            InlineKeyboardButton(
+                "➕ Add Me To Group",
+                url=f"https://t.me/{BOT_USERNAME}?startgroup=true"
+            )
+        ],
+        [
+            InlineKeyboardButton("👑 Owner", url="https://t.me/light_speedy"),
+            InlineKeyboardButton("📚 Help", callback_data="help")
         ]
-    )
-
+    ])
+    
     await query.message.edit_caption(
         caption=text,
         reply_markup=buttons
     )
 
 # ==========================================
-# PING
+# PING COMMAND
 # ==========================================
 
 @app.on_message(filters.command("ping"))
 async def ping(_, message):
-    await message.reply_text("🏓 Pong ! Bot Working Fine")
+    await message.reply_text("🏓 Pong! Bot Working Fine")
 
 # ==========================================
-# PLAY
+# PLAY COMMAND
 # ==========================================
 
 @app.on_message(filters.command("play"))
 async def play(_, message):
-
     if len(message.command) < 2:
-        return await message.reply_text("❌ Usage : /play song name")
-
+        return await message.reply_text("❌ Usage: /play song name")
+    
     query = " ".join(message.command[1:])
-
     msg = await message.reply_text("🔍 Searching Song...")
-
+    
     with YoutubeDL(ydl_opts) as ydl:
-
-        info = ydl.extract_info(
-            f"ytsearch:{query}",
-            download=False
-        )
-
+        info = ydl.extract_info(f"ytsearch:{query}", download=False)
         song = info["entries"][0]
-
+        
         url = song["url"]
         title = song["title"]
         thumb = song["thumbnail"]
         duration = song.get("duration", 0)
-
+    
     try:
-
         await call_py.join_group_call(
             message.chat.id,
-            InputAudioStream(url)
+            InputAudioStream(url)  # ✅ Ab sahi kaam karega
         )
-
     except Exception as e:
         return await msg.edit(f"❌ Error:\n{e}")
-
+    
     caption = f"""
 🎵 **Started Streaming**
 
@@ -258,81 +223,68 @@ async def play(_, message):
 🌟 Powered By : {OWNER}
 ━━━━━━━━━━━━━━━
 """
-
-    buttons = InlineKeyboardMarkup(
+    
+    buttons = InlineKeyboardMarkup([
         [
-            [
-                InlineKeyboardButton("⏸", callback_data="pause"),
-                InlineKeyboardButton("▶️", callback_data="resume"),
-                InlineKeyboardButton("⏹", callback_data="stop")
-            ]
+            InlineKeyboardButton("⏸", callback_data="pause"),
+            InlineKeyboardButton("▶️", callback_data="resume"),
+            InlineKeyboardButton("⏹", callback_data="stop")
         ]
-    )
-
-    await message.reply_photo(
-        photo=thumb,
-        caption=caption,
-        reply_markup=buttons
-    )
-
+    ])
+    
+    await message.reply_photo(photo=thumb, caption=caption, reply_markup=buttons)
     await msg.delete()
 
 # ==========================================
-# BUTTONS
+# CALLBACK HANDLERS
 # ==========================================
 
 @app.on_callback_query(filters.regex("pause"))
 async def pause(_, query):
-
     await call_py.pause_stream(query.message.chat.id)
     await query.answer("Music Paused")
 
 @app.on_callback_query(filters.regex("resume"))
 async def resume(_, query):
-
     await call_py.resume_stream(query.message.chat.id)
     await query.answer("Music Resumed")
 
 @app.on_callback_query(filters.regex("stop"))
 async def stop(_, query):
-
     await call_py.leave_group_call(query.message.chat.id)
     await query.answer("Music Stopped")
 
 # ==========================================
-# COMMANDS
+# COMMAND HANDLERS
 # ==========================================
 
 @app.on_message(filters.command("pause"))
 async def pause_cmd(_, message):
-
     await call_py.pause_stream(message.chat.id)
     await message.reply_text("⏸ Music Paused")
 
 @app.on_message(filters.command("resume"))
 async def resume_cmd(_, message):
-
     await call_py.resume_stream(message.chat.id)
     await message.reply_text("▶️ Music Resumed")
 
 @app.on_message(filters.command("stop"))
 async def stop_cmd(_, message):
-
     await call_py.leave_group_call(message.chat.id)
     await message.reply_text("⏹ Music Stopped")
 
 # ==========================================
-# START BOT
+# MAIN
 # ==========================================
 
 async def main():
-
     await app.start()
     await assistant.start()
     await call_py.start()
-
-    print("LIGHT MUSIC BOT STARTED")
-
+    
+    print("✅ LIGHT MUSIC BOT STARTED SUCCESSFULLY!")
+    
     await asyncio.Event().wait()
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

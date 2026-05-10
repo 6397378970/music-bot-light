@@ -1,288 +1,383 @@
+import asyncio
+import os
+from datetime import datetime
+
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
+from pyrogram.enums import ChatType, ParseMode
+from pyrogram.errors import RPCError
 
 from py_tgcalls import PyTgCalls, Stream
-import py_tgcalls
+from py_tgcalls.types import AudioPiped, AudioQuality
 
 from yt_dlp import YoutubeDL
 
-import asyncio
-import os
-
 # ==========================================
-# VARIABLES (Environment se lo, hardcode mat karo)
+# CONFIGURATION
 # ==========================================
 
-API_ID = int(os.getenv("API_ID", 30393394))  # Default values daal sakte ho
-API_HASH = os.getenv("API_HASH", "e6c11cf9308422a702de45fe4a95b543")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8738226196:AAHcD8BH12Ev3zABlDFBbiePeW5aZaGtjX4")
-STRING_SESSION = os.getenv("STRING_SESSION")
+API_ID = int(os.getenv("30393394"))
+API_HASH = os.getenv("e6c11cf9308422a702de45fe4a95b543")
+BOT_TOKEN = os.getenv("8738226196:AAHcD8BH12Ev3zABlDFBbiePeW5aZaGtjX4")
+STRING_SESSION = os.getenv("BQHPxDIAqyC-rURYuKkGxyKYICv1VjZyCJLvTIS2kOTKZbNrI5ZA__oZ2YZINvtk6Ut286tZFvHIlEXoGkNQH9L0fW7dKGWK0c5DO5eOCtPRZUzCH0F3dK_60daPI4erELF5T71ykXgSQY1MGssSwjdTrWMdc0m5gp9B7F_rSGtun2g-SUNgA03BkILScVkAvKj8afLPZPFwCnbEKbImsYkpjDS4JZGApS7jM9BYnmgqvA8QtG93UMwbQr7iTLUonavv9qWOO7xVtu3wVfBnLw4zn8563ZZ5afQN-8M7g5cwF3tWrkMa5547JLllvy8wEr-cn0pI-9JBNyz_hoVlI-p9p71GmwAAAAFMSMrYAA")
 
-BOT_USERNAME = "lightmusicibot"  # ✅ Sirf username, @ ke bina
-OWNER = "@light_speedy"
+OWNER_ID = int(os.getenv("OWNER_ID", "7676301555"))
+BOT_USERNAME = "LightMusicBot"  # Your bot username without @
 
-START_IMAGE = "https://files.catbox.moe/l7m3k9.png"
+START_IMG = "https://files.catbox.moe/l7m3k9.png"
+SUPPORT_LINK = "https://t.me/midnight_chatclub"
+CHANNEL_LINK = "https://t.me/anonymous_rides"
 
 # ==========================================
-# CLIENTS
+# CLIENTS INITIALIZATION
 # ==========================================
 
-app = Client(
-    "LightMusicBot",
+bot = Client(
+    "MusicBot",
     api_id=API_ID,
     api_hash=API_HASH,
     bot_token=BOT_TOKEN
 )
 
-assistant = Client(
-    "LightAssistant",
+userbot = Client(
+    "UserBot",
     api_id=API_ID,
     api_hash=API_HASH,
     session_string=STRING_SESSION
 )
 
-call_py = PyTgCalls(assistant)
+call = PyTgCalls(userbot)
 
 # ==========================================
-# YTDL
+# VARIABLES
 # ==========================================
 
-ydl_opts = {
-    "format": "bestaudio",
-    "quiet": True,
-    "geo-bypass": True,
-    "nocheckcertificate": True
-}
+queues = {}
+current_playing = {}
+paused = {}
 
 # ==========================================
-# START COMMAND
+# HELPERS
 # ==========================================
 
-@app.on_message(filters.command("start"))
-async def start(_, message):
+def get_duration(seconds: int):
+    minutes = seconds // 60
+    remaining_seconds = seconds % 60
+    return f"{minutes}:{remaining_seconds:02d}"
+
+def get_size(bytes: int):
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if bytes < 1024:
+            return f"{bytes:.2f} {unit}"
+        bytes /= 1024
+    return f"{bytes:.2f} TB"
+
+async def get_audio_info(url: str):
+    ydl_opts = {
+        'format': 'bestaudio',
+        'quiet': True,
+        'no_warnings': True,
+        'extract_flat': False,
+    }
+    
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        return {
+            'title': info.get('title', 'Unknown'),
+            'duration': info.get('duration', 0),
+            'thumbnail': info.get('thumbnail', ''),
+            'uploader': info.get('uploader', 'Unknown'),
+            'views': info.get('view_count', 0),
+            'url': url
+        }
+
+async def search_song(query: str):
+    ydl_opts = {
+        'format': 'bestaudio',
+        'quiet': True,
+        'no_warnings': True,
+        'extract_flat': True,
+        'default_search': 'ytsearch5'
+    }
+    
+    with YoutubeDL(ydl_opts) as ydl:
+        try:
+            info = ydl.extract_info(query, download=False)
+            if 'entries' in info:
+                return info['entries'][0]
+            return info
+        except:
+            return None
+
+# ==========================================
+# MUSIC CONTROLS
+# ==========================================
+
+async def play_song(chat_id: int, song_url: str, title: str):
+    try:
+        await call.join_group_call(
+            chat_id,
+            Stream(
+                AudioPiped(
+                    song_url,
+                    AudioQuality.HIGH
+                )
+            )
+        )
+        current_playing[chat_id] = {
+            'title': title,
+            'url': song_url,
+            'start_time': datetime.now()
+        }
+        return True
+    except Exception as e:
+        print(f"Error playing: {e}")
+        return False
+
+async def add_to_queue(chat_id: int, song_info: dict):
+    if chat_id not in queues:
+        queues[chat_id] = []
+    queues[chat_id].append(song_info)
+    
+async def play_next(chat_id: int):
+    if chat_id in queues and queues[chat_id]:
+        next_song = queues[chat_id].pop(0)
+        await play_song(chat_id, next_song['url'], next_song['title'])
+        
+        # Send now playing message
+        await bot.send_message(
+            chat_id,
+            f"🎵 **Now Playing:**\n\n"
+            f"**Title:** {next_song['title']}\n"
+            f"**Duration:** {get_duration(next_song['duration'])}\n"
+            f"**Requested By:** {next_song.get('requester', 'Unknown')}\n\n"
+            f"**Queue Left:** {len(queues[chat_id])} songs"
+        )
+    else:
+        await call.leave_group_call(chat_id)
+        if chat_id in current_playing:
+            del current_playing[chat_id]
+
+# ==========================================
+# COMMANDS
+# ==========================================
+
+@bot.on_message(filters.command(["start", "help"]))
+async def start_command(client: Client, message: Message):
     user = message.from_user
     
-    text = f"""
-✨ **Hey [{user.first_name}](tg://user?id={user.id})** 🎵
+    text = f"""**✨ Welcome {user.mention()}!**
 
-╭━━━━━━━━━━━━━━━━━╮
-      🎧 LIGHT MUSIC BOT
-╰━━━━━━━━━━━━━━━━━╯
+**🎧 I'm an Advanced Music Bot**
+I can play high-quality music in voice chats with queue system!
 
-⚡ Fastest VC Music Player
-🎶 Smooth Streaming
-🔥 HD Audio Quality
-💎 Professional Music System
+**📚 Available Commands:**
 
-━━━━━━━━━━━━━━━
-🌟 Powered By : {OWNER}
-━━━━━━━━━━━━━━━
+**▶️ Playback:**
+• `/play <song name>` - Play a song
+• `/pause` - Pause current song
+• `/resume` - Resume paused song
+• `/skip` - Skip current song
+• `/stop` - Stop playback
+
+**📋 Queue:**
+• `/queue` - Show queue list
+• `/clear` - Clear entire queue
+
+**ℹ️ Info:**
+• `/ping` - Check bot status
+• `/help` - Show this menu
+
+**🎵 Features:**
+• High Quality Audio
+• Queue System
+• YouTube Support
+• 24/7 Stable
+
+**💝 Made with ❤️ by @OwnerUsername**
 """
     
     buttons = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton(
-                "➕ Add Me To Group",
-                url=f"https://t.me/{BOT_USERNAME}?startgroup=true"
-            )
+            InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{BOT_USERNAME}?startgroup=true"),
+            InlineKeyboardButton("📢 Channel", url=CHANNEL_LINK)
         ],
         [
-            InlineKeyboardButton("👑 Owner", url="https://t.me/light_speedy"),
-            InlineKeyboardButton("📚 Help", callback_data="help")
+            InlineKeyboardButton("🆘 Support", url=SUPPORT_LINK),
+            InlineKeyboardButton("👑 Owner", url="@light_speedy")
         ]
     ])
     
     await message.reply_photo(
-        photo=START_IMAGE,
+        photo=START_IMG,
         caption=text,
         reply_markup=buttons
     )
 
-# ==========================================
-# HELP CALLBACK
-# ==========================================
-
-@app.on_callback_query(filters.regex("help"))
-async def help_menu(_, query):
-    text = f"""
-📚 **LIGHT MUSIC BOT COMMANDS**
-
-▶️ /play song name
-▶️ /pause
-▶️ /resume
-▶️ /skip
-▶️ /stop
-▶️ /ping
-
-━━━━━━━━━━━━━━━
-🌟 Powered By : {OWNER}
-━━━━━━━━━━━━━━━
-"""
-    
-    buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔙 Back", callback_data="back")]
-    ])
-    
-    await query.message.edit_caption(
-        caption=text,
-        reply_markup=buttons
-    )
-
-# ==========================================
-# BACK CALLBACK
-# ==========================================
-
-@app.on_callback_query(filters.regex("back"))
-async def back(_, query):
-    user = query.from_user
-    
-    text = f"""
-✨ **Hey [{user.first_name}](tg://user?id={user.id})** 🎵
-
-╭━━━━━━━━━━━━━━━━━╮
-      🎧 LIGHT MUSIC BOT
-╰━━━━━━━━━━━━━━━━━╯
-
-⚡ Fastest VC Music Player
-🎶 Smooth Streaming
-🔥 HD Audio Quality
-💎 Professional Music System
-
-━━━━━━━━━━━━━━━
-🌟 Powered By : {OWNER}
-━━━━━━━━━━━━━━━
-"""
-    
-    buttons = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton(
-                "➕ Add Me To Group",
-                url=f"https://t.me/{BOT_USERNAME}?startgroup=true"
-            )
-        ],
-        [
-            InlineKeyboardButton("👑 Owner", url="https://t.me/light_speedy"),
-            InlineKeyboardButton("📚 Help", callback_data="help")
-        ]
-    ])
-    
-    await query.message.edit_caption(
-        caption=text,
-        reply_markup=buttons
-    )
-
-# ==========================================
-# PING COMMAND
-# ==========================================
-
-@app.on_message(filters.command("ping"))
-async def ping(_, message):
-    await message.reply_text("🏓 Pong! Bot Working Fine")
-
-# ==========================================
-# PLAY COMMAND
-# ==========================================
-
-@app.on_message(filters.command("play"))
-async def play(_, message):
+@bot.on_message(filters.command("play"))
+async def play_command(client: Client, message: Message):
     if len(message.command) < 2:
-        return await message.reply_text("❌ Usage: /play song name")
+        return await message.reply_text("❌ **Please provide a song name!**\n\nUsage: `/play <song name>`")
     
     query = " ".join(message.command[1:])
-    msg = await message.reply_text("🔍 Searching Song...")
+    user = message.from_user
     
-    with YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(f"ytsearch:{query}", download=False)
-        song = info["entries"][0]
-        
-        url = song["url"]
-        title = song["title"]
-        thumb = song["thumbnail"]
-        duration = song.get("duration", 0)
+    msg = await message.reply_text("🔍 **Searching for song...**")
     
-   # ✅ py-tgcalls syntax
-await call_py.join_group_call(
-    message.chat.id,
-    Stream(url)  # Direct URL se stream karne ke liye
-)
-    except Exception as e:
-        return await msg.edit(f"❌ Error:\n{e}")
+    # Search song
+    song = await search_song(query)
     
-    caption = f"""
-🎵 **Started Streaming**
-
-━━━━━━━━━━━━━━━
-
-🎧 **Title:** {title}
-
-⏳ **Duration:** {duration} sec
-
-👤 **Requested By:** {message.from_user.mention}
-
-━━━━━━━━━━━━━━━
-🌟 Powered By : {OWNER}
-━━━━━━━━━━━━━━━
-"""
+    if not song:
+        return await msg.edit_text("❌ **No results found!**")
     
-    buttons = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("⏸", callback_data="pause"),
-            InlineKeyboardButton("▶️", callback_data="resume"),
-            InlineKeyboardButton("⏹", callback_data="stop")
-        ]
-    ])
+    # Get audio URL
+    with YoutubeDL({'format': 'bestaudio', 'quiet': True}) as ydl:
+        info = ydl.extract_info(f"https://youtube.com/watch?v={song['id']}", download=False)
+        audio_url = info['url']
     
-    await message.reply_photo(photo=thumb, caption=caption, reply_markup=buttons)
-    await msg.delete()
+    song_info = {
+        'title': song.get('title', 'Unknown'),
+        'duration': int(song.get('duration', 0)),
+        'url': audio_url,
+        'requester': user.mention,
+        'thumbnail': f"https://img.youtube.com/vi/{song['id']}/hqdefault.jpg"
+    }
+    
+    # Check if already playing
+    if message.chat.id in current_playing:
+        await add_to_queue(message.chat.id, song_info)
+        await msg.edit_text(
+            f"✅ **Added to Queue!**\n\n"
+            f"**Title:** {song_info['title']}\n"
+            f"**Duration:** {get_duration(song_info['duration'])}\n"
+            f"**Position:** {len(queues[message.chat.id])}\n\n"
+            f"**Requested by:** {user.mention}"
+        )
+    else:
+        # Play immediately
+        success = await play_song(message.chat.id, audio_url, song_info['title'])
+        if success:
+            await msg.edit_text(
+                f"🎵 **Now Playing!**\n\n"
+                f"**Title:** {song_info['title']}\n"
+                f"**Duration:** {get_duration(song_info['duration'])}\n"
+                f"**Requested by:** {user.mention}"
+            )
+        else:
+            await msg.edit_text("❌ **Failed to play!**")
+
+@bot.on_message(filters.command("pause"))
+async def pause_command(client: Client, message: Message):
+    if message.chat.id in current_playing:
+        try:
+            await call.pause_stream(message.chat.id)
+            await message.reply_text("⏸ **Music Paused!**\n\nUse `/resume` to continue.")
+        except:
+            await message.reply_text("❌ **Nothing is playing!**")
+    else:
+        await message.reply_text("❌ **No music is playing!**")
+
+@bot.on_message(filters.command("resume"))
+async def resume_command(client: Client, message: Message):
+    if message.chat.id in current_playing:
+        try:
+            await call.resume_stream(message.chat.id)
+            await message.reply_text("▶️ **Music Resumed!**")
+        except:
+            await message.reply_text("❌ **Nothing is paused!**")
+    else:
+        await message.reply_text("❌ **No music is playing!**")
+
+@bot.on_message(filters.command("skip"))
+async def skip_command(client: Client, message: Message):
+    if message.chat.id in current_playing:
+        await message.reply_text("⏭️ **Skipping current song...**")
+        await play_next(message.chat.id)
+    else:
+        await message.reply_text("❌ **Nothing is playing!**")
+
+@bot.on_message(filters.command("stop"))
+async def stop_command(client: Client, message: Message):
+    if message.chat.id in current_playing:
+        await call.leave_group_call(message.chat.id)
+        if message.chat.id in current_playing:
+            del current_playing[message.chat.id]
+        if message.chat.id in queues:
+            queues[message.chat.id].clear()
+        await message.reply_text("⏹️ **Music Stopped! Queue Cleared.**")
+    else:
+        await message.reply_text("❌ **Nothing is playing!**")
+
+@bot.on_message(filters.command("queue"))
+async def queue_command(client: Client, message: Message):
+    chat_id = message.chat.id
+    
+    if chat_id not in queues or not queues[chat_id]:
+        return await message.reply_text("📭 **Queue is empty!**\n\nUse `/play` to add songs.")
+    
+    queue_list = queues[chat_id]
+    current = current_playing.get(chat_id, {})
+    
+    text = f"**📋 Current Queue**\n\n"
+    text += f"**▶️ Now Playing:**\n{current.get('title', 'None')}\n\n"
+    text += f"**📝 Queue List:**\n"
+    
+    for i, song in enumerate(queue_list[:10], 1):
+        text += f"{i}. {song['title']} - `{get_duration(song['duration'])}`\n"
+    
+    if len(queue_list) > 10:
+        text += f"\n*And {len(queue_list) - 10} more...*"
+    
+    await message.reply_text(text)
+
+@bot.on_message(filters.command("clear"))
+async def clear_command(client: Client, message: Message):
+    if message.chat.id in queues:
+        queues[message.chat.id].clear()
+        await message.reply_text("🗑️ **Queue Cleared!**")
+    else:
+        await message.reply_text("📭 **Queue is already empty!**")
+
+@bot.on_message(filters.command("ping"))
+async def ping_command(client: Client, message: Message):
+    start = datetime.now()
+    msg = await message.reply_text("🏓 **Pinging...**")
+    end = datetime.now()
+    latency = (end - start).microseconds / 1000
+    await msg.edit_text(f"🏓 **Pong!**\n\n**Latency:** `{latency}ms`\n**Status:** 🟢 Online")
 
 # ==========================================
-# CALLBACK HANDLERS
+# VOICE CHAT HANDLERS
 # ==========================================
 
-@app.on_callback_query(filters.regex("pause"))
-async def pause(_, query):
-    await call_py.pause_stream(query.message.chat.id)
-    await query.answer("Music Paused")
+@call.on_stream_end()
+async def stream_end_handler(chat_id: int):
+    await play_next(chat_id)
 
-@app.on_callback_query(filters.regex("resume"))
-async def resume(_, query):
-    await call_py.resume_stream(query.message.chat.id)
-    await query.answer("Music Resumed")
-
-@app.on_callback_query(filters.regex("stop"))
-async def stop(_, query):
-    await call_py.leave_group_call(query.message.chat.id)
-    await query.answer("Music Stopped")
+@call.on_kicked()
+async def kicked_handler(chat_id: int):
+    if chat_id in current_playing:
+        del current_playing[chat_id]
+    if chat_id in queues:
+        queues[chat_id].clear()
 
 # ==========================================
-# COMMAND HANDLERS
-# ==========================================
-
-@app.on_message(filters.command("pause"))
-async def pause_cmd(_, message):
-    await call_py.pause_stream(message.chat.id)
-    await message.reply_text("⏸ Music Paused")
-
-@app.on_message(filters.command("resume"))
-async def resume_cmd(_, message):
-    await call_py.resume_stream(message.chat.id)
-    await message.reply_text("▶️ Music Resumed")
-
-@app.on_message(filters.command("stop"))
-async def stop_cmd(_, message):
-    await call_py.leave_group_call(message.chat.id)
-    await message.reply_text("⏹ Music Stopped")
-
-# ==========================================
-# MAIN
+# START BOT
 # ==========================================
 
 async def main():
-    await app.start()
-    await assistant.start()
-    await call_py.start()
+    await bot.start()
+    await userbot.start()
+    await call.start()
     
-    print("✅ LIGHT MUSIC BOT STARTED SUCCESSFULLY!")
+    print("""
+    ╔═══════════════════════════════╗
+    ║   🎵 MUSIC BOT STARTED! 🎵    ║
+    ║                               ║
+    ║   Status: 🟢 Online           ║
+    ║   Commands: ✅ Loaded         ║
+    ╚═══════════════════════════════╝
+    """)
     
     await asyncio.Event().wait()
 

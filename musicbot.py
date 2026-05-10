@@ -1,8 +1,8 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from pytgcalls import PyTgCalls
-from pytgcalls.types import InputAudioStream  # ✅ Yahan change kiya
+from py_tgcalls import PyTgCalls, Stream
+import py_tgcalls
 
 from yt_dlp import YoutubeDL
 
@@ -200,11 +200,11 @@ async def play(_, message):
         thumb = song["thumbnail"]
         duration = song.get("duration", 0)
     
-    try:
-        await call_py.join_group_call(
-            message.chat.id,
-            InputAudioStream(url)  # ✅ Ab sahi kaam karega
-        )
+   # ✅ py-tgcalls syntax
+await call_py.join_group_call(
+    message.chat.id,
+    Stream(url)  # Direct URL se stream karne ke liye
+)
     except Exception as e:
         return await msg.edit(f"❌ Error:\n{e}")
     

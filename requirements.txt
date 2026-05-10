@@ -1,4 +1,4 @@
 pyrogram>=2.0.0
-pytgcalls==3.0.0.dev24
+py-tgcalls==0.9.7
 yt-dlp>=2023.0.0
-py-tgcalls==2.2.10
+ffmpeg-python>=0.2.0

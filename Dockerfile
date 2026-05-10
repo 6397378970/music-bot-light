@@ -1,25 +1,20 @@
 FROM python:3.10-slim
 
-# System dependencies install karo
-RUN apt-get update && \
-    apt-get install -y \
+# सभी जरूरी पैकेज एक साथ इंस्टॉल
+RUN apt-get update && apt-get install -y \
     ffmpeg \
+    nodejs \
+    npm \
     git \
-    gcc \
-    g++ \
-    make \
-    python3-dev \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+# ऐप कॉपी करें
+COPY . /app/
+WORKDIR /app/
 
-# Python packages install karo
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# पायथन पैकेज इंस्टॉल करें
+RUN pip install -r requirements.txt
 
-# Bot code copy karo
-COPY musicbot.py .
-
-# Run bot
-CMD ["python", "-u", "musicbot.py"]
+# स्टार्ट कमांड
+CMD bash start
